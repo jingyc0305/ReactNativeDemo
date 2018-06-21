@@ -13,30 +13,20 @@ import {
   Text,
   View,
   FlatList,
-  ActivityIndicator
+  ActivityIndicator,
+  StatusBar
 } from "react-native";
 import Swiper from "react-native-swiper";
 import TabNavigator from 'react-native-tab-navigator';
 /**
- * 测试模拟电影列表数据
- */
-var MOCKED_MOVIES_DATA = [
-  {
-    title: "功夫熊猫",
-    year: "2018",
-    posters: { thumbnail: "http://i.imgur.com/UePbdph.jpg" }
-  }
-];
-/**
- * 测试真实电影json数据
- */
-var REQUEST_URL =
-  "https://raw.githubusercontent.com/facebook/react-native/0.51-stable/docs/MoviesExample.json";
-
-/**
  * wanandroid 文章列表api
  */
 var REQUEST_WANANDROID_URL_ARTICALS = "http://www.wanandroid.com/article/list/";
+/**
+ * wanandroid轮播api
+ */
+var REQUEST_WANANDROID_URL_BANNERS = "http://www.wanandroid.com/banner/json";
+
 const instructions = Platform.select({
   ios: "Press Cmd+R to reload,\n" + "Cmd+D or shake for dev menu",
   android: "摇一摇打开"
@@ -46,11 +36,15 @@ var itemNumbers = 20; //数据条目数
 var totalPages = 1; //总页数
 //type Props = {};
 export default class App extends Component {
+  static navigationOptions ={ 
+    title:'首页'  // 设置当前页面的标题
+    //tabBarLabel:'首页'
+  } 
   constructor(props) {
     super(props);
     this.state = {
-      //movies:null,
       data: [], //数据源
+      banners: [],//轮播图数据源
       neterror: false, //网络请求错误
       errorinfo: "", //错误信息
       showfooter: 0, //控制列表底部显示状态 0 隐藏 1 没有更多 2 正在加载更多...
@@ -58,7 +52,8 @@ export default class App extends Component {
       refreshing: false,//控制下拉刷新
       selectedTab: "home"
     };
-    this.fetchData = this.fetchData.bind(this);
+    this.fetchBannerData = this.fetchBannerData.bind(this);
+    this.fetchArticalData = this.fetchArticalData.bind(this);
   }
 
   //分割线
@@ -66,16 +61,19 @@ export default class App extends Component {
     return <View style={styles.separator} />;
   };
 
-  //组件加载完成 开始请求数据 生命周期回调函数
+ /**
+  *  组件加载完成 开始请求数据 生命周期回调函数
+  */
   componentDidMount() {
-    this.fetchData(curPage);
+    this.fetchBannerData();
+    this.fetchArticalData(curPage);
   }
-  fetchData(curPage) {
+  /**
+   * 网络请求->获取文章列表数据
+   * @param {当前页码} curPage 
+   */
+  fetchArticalData(curPage) {
     //实现分页加载
-    console.log(
-      "artical_url*",
-      REQUEST_WANANDROID_URL_ARTICALS + (curPage - 1) + "/json"
-    );
     fetch(REQUEST_WANANDROID_URL_ARTICALS + (curPage - 1) + "/json")
       .then(response => response.json())
       .then(responseData => {
@@ -105,7 +103,25 @@ export default class App extends Component {
       })
       .done();
   }
-
+/**
+ * 网络请求->获取banner数据
+ */
+  fetchBannerData() {
+    fetch(REQUEST_WANANDROID_URL_BANNERS)
+      .then(response => response.json())
+      .then(responseData => {
+        this.setState({
+          banners: responseData.data,
+        });
+      })
+      .catch(error => {
+        this.setState({
+          neterror: true,
+          errorinfo: error
+        });
+      })
+      .done();
+  }
   //添加item唯一key 解决警告
   _keyExtractor = (item, index) => index.toString();
 
@@ -122,14 +138,19 @@ export default class App extends Component {
     //使用FaltList组件渲染一个列表
     return (
       <View style={styles.container}>
+        <StatusBar
+          backgroundColor="#f9f9f9"
+          barStyle="dark-content"
+        />
         <TabNavigator>
           <TabNavigator.Item
             selected={this.state.selectedTab === 'home'}
             title="首页"
-            renderIcon={() => <Image source={require('./image/home_normal.png')} stype = {styles.tabicon} />}
-            renderSelectedIcon={() => <Image  source={require('./image/home.png')} stype = {styles.tabicon} />}
-            badgeText="1"
+            renderIcon={() => <Image source={require('./image/home_normal.png')} style={styles.tabicon} />}
+            renderSelectedIcon={() => <Image source={require('./image/home.png')} style={styles.tabicon} />}
+            //badgeText="1"
             onPress={() => this.setState({ selectedTab: 'home' })}>
+          
             <FlatList
               data={this.state.data} //数据源
               keyExtractor={this._keyExtractor} //item key
@@ -141,14 +162,17 @@ export default class App extends Component {
               onEndReachedThreshold={1}
               refreshing={this.state.refreshing}
               onRefresh={() => this.onPullRefresh()} //下拉刷新
-              style={styles.liststyle}>
+              style={styles.liststyle}
+              onPress={()=>_gotoArticalDetailPage()}>             
             </FlatList>
+           
+            
           </TabNavigator.Item>
           <TabNavigator.Item
             selected={this.state.selectedTab === 'mine'}
             title="我的"
-            renderIcon={() => <Image stype = {styles.tabicon} source={require('./image/mine_normal.png')} />}
-            renderSelectedIcon={() => <Image stype = {styles.tabicon} source={require('./image/mine.png')} />}
+            renderIcon={() => <Image style={styles.tabicon} source={require('./image/mine_normal.png')} />}
+            renderSelectedIcon={() => <Image style={styles.tabicon} source={require('./image/mine.png')} />}
             //renderBadge={() => <CustomBadgeView />}
             onPress={() => this.setState({ selectedTab: 'mine' })}>
             <View style={styles.container}>
@@ -158,6 +182,10 @@ export default class App extends Component {
         </TabNavigator>
       </View>
     );
+  }
+  _gotoArticalDetailPage(){
+    const { navigate } = this.props.navigationOptions;
+    navigate('ArticalDetailPage', { title: '文章详情', des: '说明' })
   }
   //渲染 加载中样式......
   renderloading() {
@@ -201,19 +229,24 @@ export default class App extends Component {
           backgroundColor: "rgba(0,0,0,.5)",
           width: 6,
           height: 6
-        }}
-      >
-        <View style={styles.slide1}>
-          <Text style={styles.text}>Hello Swiper</Text>
-        </View>
-        <View style={styles.slide2}>
-          <Text style={styles.text}>Beautiful</Text>
-        </View>
-        <View style={styles.slide3}>
-          <Text style={styles.text}>And simple</Text>
-        </View>
+        }}>
+        {this._swpiers()}
       </Swiper>
     );
+  }
+  _swpiers(){
+    var itemArr = [];
+    for (let i = 0; i < this.state.banners.length; i++) {
+      let banner= this.state.banners[i];
+      console.log(banner.imagePath);
+      itemArr.push(
+        <View key={i} style = {styles.container}>
+          <Image style={styles.slide1}
+                source={{uri:banner.imagePath}}/>
+        </View>
+      );
+    }
+    return itemArr;
   }
   //底部 footer view
   footerComponent = () => {
@@ -249,7 +282,7 @@ export default class App extends Component {
       },
       () => {
         curPage = 1;
-        this.fetchData(curPage);
+        this.fetchArticalData(curPage);
       }
     );
   };
@@ -269,7 +302,7 @@ export default class App extends Component {
     //显示底部view
     this.state.showfooter = 2;
     //加载数据
-    this.fetchData(curPage);
+    this.fetchArticalData(curPage);
   }
   //渲染 列表数据样式
   rendermovies(item) {
@@ -277,10 +310,10 @@ export default class App extends Component {
       <View style={styles.articalcontainer}>
         {/* <Image source={{ uri: movie.posters.thumbnail }} style={styles.imgesize}/> */}
         <Text style={styles.title}>{item.title}</Text>
-        <Text style={styles.category}>{"分类: " + item.chapterName}</Text>
+        <Text style={styles.category}>{item.chapterName}</Text>
         <View style={styles.bottomcontainer}>
-          <Text style={styles.instructions}>{"作者: " + item.author}</Text>
-          <Text style={styles.date}>{"日期: " + item.niceDate}</Text>
+          <Text style={styles.instructions}>{item.author}</Text>
+          <Text style={styles.date}>{"      " + item.niceDate}</Text>
         </View>
       </View>
     );
@@ -290,7 +323,7 @@ export default class App extends Component {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: "#F5FCFF"
+    backgroundColor: "#f9f9f9"
   },
   articalcontainer: {
     flex: 1,
@@ -329,14 +362,21 @@ const styles = StyleSheet.create({
     margin: 10
   },
   instructions: {
-    alignSelf: "flex-start"
+    alignSelf: "flex-start",
+    fontSize: 12,
+    marginLeft: 8,
+    marginTop: 8,
   },
   date: {
-    alignSelf: "flex-end"
+    fontSize: 12,
+    alignSelf: "flex-end",
+    marginLeft: 8,
   },
   category: {
     alignSelf: "flex-start",
-    marginTop: 8
+    marginTop: 8,
+    fontSize: 12,
+    marginLeft: 8,
   },
   imgesize: {
     margin: 15,
@@ -344,6 +384,7 @@ const styles = StyleSheet.create({
     height: 150
   },
   title: {
+    marginLeft: 8,
     fontSize: 20,
     alignSelf: "flex-start",
     color: "#333333"
@@ -357,8 +398,10 @@ const styles = StyleSheet.create({
     backgroundColor: "#F5FCFF"
   },
   separator: {
-    height: 1,
-    backgroundColor: "#C0C0C0"
+    height: 0.5,
+    backgroundColor: "#C0C0C0",
+    marginLeft: 12,
+    marginRight: 12,
   },
 
   //轮播banner------------start
@@ -367,7 +410,6 @@ const styles = StyleSheet.create({
     flex: 1,
     justifyContent: "center",
     alignItems: "center",
-    backgroundColor: "#9DD6EB"
   },
   slide2: {
     flex: 1,
@@ -398,7 +440,7 @@ const styles = StyleSheet.create({
     alignItems: "center"
   },
   tabicon: {
-    width: 10,
-    height: 10
-},
+    width: 24,
+    height: 24
+  },
 });
