@@ -14,10 +14,11 @@ import {
   View,
   FlatList,
   ActivityIndicator,
-  StatusBar
+  StatusBar,
+  TouchableHighlight
 } from "react-native";
 import Swiper from "react-native-swiper";
-import TabNavigator from 'react-native-tab-navigator';
+import TabNavigator from "react-native-tab-navigator";
 /**
  * wanandroid 文章列表api
  */
@@ -35,21 +36,21 @@ var curPage = 1; //当前页数
 var itemNumbers = 20; //数据条目数
 var totalPages = 1; //总页数
 //type Props = {};
-export default class App extends Component {
-  static navigationOptions ={ 
-    title:'首页'  // 设置当前页面的标题
+export default class Home extends Component {
+  static navigationOptions = {
+    title: "首页" // 设置当前页面的标题
     //tabBarLabel:'首页'
-  } 
+  };
   constructor(props) {
     super(props);
     this.state = {
       data: [], //数据源
-      banners: [],//轮播图数据源
+      banners: [], //轮播图数据源
       neterror: false, //网络请求错误
       errorinfo: "", //错误信息
       showfooter: 0, //控制列表底部显示状态 0 隐藏 1 没有更多 2 正在加载更多...
       loaded: false, //列表数据加载状态
-      refreshing: false,//控制下拉刷新
+      refreshing: false, //控制下拉刷新
       selectedTab: "home"
     };
     this.fetchBannerData = this.fetchBannerData.bind(this);
@@ -61,16 +62,17 @@ export default class App extends Component {
     return <View style={styles.separator} />;
   };
 
- /**
-  *  组件加载完成 开始请求数据 生命周期回调函数
-  */
+  /**
+   *  组件加载完成 开始请求数据 生命周期回调函数
+   */
   componentDidMount() {
+    console.log("====开始加载数据=====");
     this.fetchBannerData();
     this.fetchArticalData(curPage);
   }
   /**
    * 网络请求->获取文章列表数据
-   * @param {当前页码} curPage 
+   * @param {当前页码} curPage
    */
   fetchArticalData(curPage) {
     //实现分页加载
@@ -103,15 +105,15 @@ export default class App extends Component {
       })
       .done();
   }
-/**
- * 网络请求->获取banner数据
- */
+  /**
+   * 网络请求->获取banner数据
+   */
   fetchBannerData() {
     fetch(REQUEST_WANANDROID_URL_BANNERS)
       .then(response => response.json())
       .then(responseData => {
         this.setState({
-          banners: responseData.data,
+          banners: responseData.data
         });
       })
       .catch(error => {
@@ -138,19 +140,26 @@ export default class App extends Component {
     //使用FaltList组件渲染一个列表
     return (
       <View style={styles.container}>
-        <StatusBar
-          backgroundColor="#f9f9f9"
-          barStyle="dark-content"
-        />
+        <StatusBar backgroundColor="#f9f9f9" barStyle="dark-content" />
         <TabNavigator>
           <TabNavigator.Item
-            selected={this.state.selectedTab === 'home'}
+            selected={this.state.selectedTab === "home"}
             title="首页"
-            renderIcon={() => <Image source={require('./image/home_normal.png')} style={styles.tabicon} />}
-            renderSelectedIcon={() => <Image source={require('./image/home.png')} style={styles.tabicon} />}
+            renderIcon={() => (
+              <Image
+                source={require("./image/home_normal.png")}
+                style={styles.tabicon}
+              />
+            )}
+            renderSelectedIcon={() => (
+              <Image
+                source={require("./image/home.png")}
+                style={styles.tabicon}
+              />
+            )}
             //badgeText="1"
-            onPress={() => this.setState({ selectedTab: 'home' })}>
-          
+            onPress={() => this.setState({ selectedTab: "home" })}
+          >
             <FlatList
               data={this.state.data} //数据源
               keyExtractor={this._keyExtractor} //item key
@@ -163,18 +172,27 @@ export default class App extends Component {
               refreshing={this.state.refreshing}
               onRefresh={() => this.onPullRefresh()} //下拉刷新
               style={styles.liststyle}
-              onPress={()=>_gotoArticalDetailPage()}>             
-            </FlatList>
-           
-            
+              
+            />
           </TabNavigator.Item>
           <TabNavigator.Item
-            selected={this.state.selectedTab === 'mine'}
+            selected={this.state.selectedTab === "mine"}
             title="我的"
-            renderIcon={() => <Image style={styles.tabicon} source={require('./image/mine_normal.png')} />}
-            renderSelectedIcon={() => <Image style={styles.tabicon} source={require('./image/mine.png')} />}
+            renderIcon={() => (
+              <Image
+                style={styles.tabicon}
+                source={require("./image/mine_normal.png")}
+              />
+            )}
+            renderSelectedIcon={() => (
+              <Image
+                style={styles.tabicon}
+                source={require("./image/mine.png")}
+              />
+            )}
             //renderBadge={() => <CustomBadgeView />}
-            onPress={() => this.setState({ selectedTab: 'mine' })}>
+            onPress={() => this.setState({ selectedTab: "mine" })}
+          >
             <View style={styles.container}>
               <Text>我的</Text>
             </View>
@@ -183,9 +201,10 @@ export default class App extends Component {
       </View>
     );
   }
-  _gotoArticalDetailPage(){
-    const { navigate } = this.props.navigationOptions;
-    navigate('ArticalDetailPage', { title: '文章详情', des: '说明' })
+  _gotoArticalDetailPage = (item)=> {
+    const { navigate } = this.props.navigation;
+    console.log("====_gotoArticalDetailPage=====");
+    navigate("Artical", { title: item.title, artical_url:item.link});
   }
   //渲染 加载中样式......
   renderloading() {
@@ -229,20 +248,20 @@ export default class App extends Component {
           backgroundColor: "rgba(0,0,0,.5)",
           width: 6,
           height: 6
-        }}>
+        }}
+      >
         {this._swpiers()}
       </Swiper>
     );
   }
-  _swpiers(){
+  _swpiers() {
     var itemArr = [];
     for (let i = 0; i < this.state.banners.length; i++) {
-      let banner= this.state.banners[i];
+      let banner = this.state.banners[i];
       console.log(banner.imagePath);
       itemArr.push(
-        <View key={i} style = {styles.container}>
-          <Image style={styles.slide1}
-                source={{uri:banner.imagePath}}/>
+        <View key={i} style={styles.container}>
+          <Image style={styles.slide1} source={{ uri: banner.imagePath }} />
         </View>
       );
     }
@@ -307,17 +326,23 @@ export default class App extends Component {
   //渲染 列表数据样式
   rendermovies(item) {
     return (
-      <View style={styles.articalcontainer}>
-        {/* <Image source={{ uri: movie.posters.thumbnail }} style={styles.imgesize}/> */}
-        <Text style={styles.title}>{item.title}</Text>
-        <Text style={styles.category}>{item.chapterName}</Text>
-        <View style={styles.bottomcontainer}>
-          <Text style={styles.instructions}>{item.author}</Text>
-          <Text style={styles.date}>{"      " + item.niceDate}</Text>
+     
+      <TouchableHighlight onPress={()=>this._gotoArticalDetailPage(item)}>
+       <View style={styles.articalcontainer}>
+          {/* <Image source={{ uri: movie.posters.thumbnail }} style={styles.imgesize}/> */}
+          <Text style={styles.title}>{item.title}</Text>
+          <Text style={styles.category}>{item.chapterName}</Text>
+          <View style={styles.bottomcontainer}>
+            <Text style={styles.instructions}>{item.author}</Text>
+            <Text style={styles.date}>{"      " + item.niceDate}</Text>
+          </View>
         </View>
-      </View>
+      </TouchableHighlight>
+       
+     
     );
   }
+ 
 }
 
 const styles = StyleSheet.create({
@@ -365,18 +390,18 @@ const styles = StyleSheet.create({
     alignSelf: "flex-start",
     fontSize: 12,
     marginLeft: 8,
-    marginTop: 8,
+    marginTop: 8
   },
   date: {
     fontSize: 12,
     alignSelf: "flex-end",
-    marginLeft: 8,
+    marginLeft: 8
   },
   category: {
     alignSelf: "flex-start",
     marginTop: 8,
     fontSize: 12,
-    marginLeft: 8,
+    marginLeft: 8
   },
   imgesize: {
     margin: 15,
@@ -401,7 +426,7 @@ const styles = StyleSheet.create({
     height: 0.5,
     backgroundColor: "#C0C0C0",
     marginLeft: 12,
-    marginRight: 12,
+    marginRight: 12
   },
 
   //轮播banner------------start
@@ -409,7 +434,7 @@ const styles = StyleSheet.create({
   slide1: {
     flex: 1,
     justifyContent: "center",
-    alignItems: "center",
+    alignItems: "center"
   },
   slide2: {
     flex: 1,
@@ -442,5 +467,5 @@ const styles = StyleSheet.create({
   tabicon: {
     width: 24,
     height: 24
-  },
+  }
 });
